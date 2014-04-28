@@ -6,3 +6,7 @@
 </ul>
 
 <button id="templateButton">Templete test button!</button>
+
+<div id="clickTemplate" />
+
+<div id="responseTemplate" />
