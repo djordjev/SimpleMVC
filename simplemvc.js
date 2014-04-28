@@ -44,61 +44,6 @@ var EventDispatcher = function() {
 	};
 };
 
-//********************************************************* BASE VIEW *************************************************//
-
-var BaseView = function(domSelector, templateFile) {
-	this.isInitialized = false;
-	this.domElement = $(domSelector);
-	
-	var self = this;
-	$.ajax({url: templateFile}).done(function(data) {
-		self.html = data;
-		self.isInitialized = true;
-		self.render();
-		self.dispatchEvent(VIEW_INITIALIZED, {});
-	});
-	
-	this.render = function () {
-		this.domElement.html(this.html);
-	};
-	
-};
-
-BaseView.prototype = new EventDispatcher();
-
-
-//********************************************************* BASE MODEL *************************************************//
-
-
-var BaseModel = function (){};
-BaseModel.prototype = new EventDispatcher();
-
-//********************************************************* BASE CONTROLLER *************************************************//
-
-var BaseController = function(view, model) {
-	this.view = view;
-	this.model = model;
-	
-	this.addEventHandlers = function (){};
-	this.initializeView = function(){};
-	
-	this.initialize = function () {
-		if(this.view.isInitialized) {
-			this.addEventHandlers();
-			this.initializeView();
-		} else {
-			var self = this;
-			view.addEventListener(VIEW_INITIALIZED, function viewInitialized(event) {
-				self.addEventHandlers();
-				self.initializeView();
-		});
-	}
-	};
-	
-	
-};
-BaseController.prototype = new EventDispatcher();
-
 //********************************************************* BINDABLE VARIABLE *************************************************//
 
 var BindableVar = function () {
@@ -128,3 +73,95 @@ var BindableVar = function () {
 	};
 };
 BindableVar.prototype = new EventDispatcher();
+
+//********************************************************* BASE VIEW *************************************************//
+
+var BaseView = function(domSelector, templateFile, model) {
+	this.isInitialized = false;
+	this.domElement = $(domSelector);
+	this.model = model;
+	
+	var self = this;
+	$.ajax({url: templateFile}).done(function(data) {
+		self.template = data;
+		self.isInitialized = true;
+		self.bindVariables();
+		self.parseTemplate();
+		self.dispatchEvent(VIEW_INITIALIZED, {});
+	});
+	
+	this.bindVariables = function () {
+		var self = this;
+		this.forEachBindedVariable(function(bindedVariable, varibleName) {
+			bindedVariable.addEventListener(PROPERTY_CHANGED, self.refreshView);
+		});
+	};
+	
+	this.parseTemplate = function() {
+		var parsedHTML = this.template;
+		// get all variables under placeholder
+		this.forEachBindedVariable(function(bindedVariable, variableName) {
+			parsedHTML.replace("{{" + variableName + "}}", bindedVariable.variable);
+		});
+		this.domElement.html(parsedHTML);
+	};
+	
+	// the only argument of this function is function that will be called for every binded varable with two arguments: variable itself and variable name in model.
+	this.forEachBindedVariable = function(actionOnVariable) {
+		var allBindedVariables = this.template.match(/\{\{[a-zA-Z0-9]*\}\}/g);
+		if(allBindedVariables != null) {
+			for(var i = 0; i < allBindedVariables.length; i++) {
+				var variableName = res[i].substring(2, res[i].length - 2); // remove leading and trailing double curly braces
+				var modelVariable = model[variableName];
+				if(modelVariable instanceof BindableVariable) {
+					if(actionOnVariable != null) {
+						actionOnVariable(modelVariable, variableName);
+					}
+				} else {
+					console.error("Trying to bind to variable that is not bindable");
+				}
+			}
+		}
+	};
+	
+	this.refreshView = function(event) {
+		this.parseTemplate();
+	};
+	
+};
+BaseView.prototype = new EventDispatcher();
+
+
+//********************************************************* BASE MODEL *************************************************//
+
+
+var BaseModel = function (){};
+BaseModel.prototype = new EventDispatcher();
+
+//********************************************************* BASE CONTROLLER *************************************************//
+
+
+var BaseController = function(view, model) {
+	this.view = view;
+	this.model = model;
+
+	this.addEventHandlers = function() {};
+	this.initializeView = function() {};
+
+	this.initialize = function() {
+		if (this.view.isInitialized) {
+			this.addEventHandlers();
+			this.initializeView();
+		} else {
+			var self = this;
+			view.addEventListener(VIEW_INITIALIZED, function viewInitialized(event) {
+				self.addEventHandlers();
+				self.initializeView();
+			});
+		}
+	};
+
+}; 
+
+BaseController.prototype = new EventDispatcher();
+

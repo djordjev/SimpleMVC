@@ -10,3 +10,6 @@
 <div id="clickTemplate" />
 
 <div id="responseTemplate" />
+
+{{djordje}}
+{{vukovic}}
