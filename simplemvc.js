@@ -104,7 +104,6 @@ var BaseView = function(domSelector, templateFile, model) {
 			parsedHTML = parsedHTML.replace("{{" + variableName + "}}", bindedVariable.variable);
 		});
 		this.domElement.html(parsedHTML);
-		console.log("Parsed template");
 	};
 	
 	// the only argument of this function is function that will be called for every binded varable with two arguments: variable itself and variable name in model.

@@ -63,12 +63,13 @@ $(document).ready(function() {
 		var self = this;
 		
 		this.addEventHandlers = function () {
-		//	$("#incrementButton").click(this.clickOnIncrementButton);
-			$(document).on('click', "#incrementButton", this.clickOnIncrementButton);
+			$(document).on('click', "#incrementButton", function(e) {
+				e.stopImmediatePropagation();
+				self.clickOnIncrementButton();
+			});
 		};
 		
 		this.clickOnIncrementButton = function() {
-			console.log("calling increment");
 			self.model.increment();
 		};
 	};
