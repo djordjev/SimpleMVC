@@ -46,8 +46,8 @@ var EventDispatcher = function() {
 
 //********************************************************* BINDABLE VARIABLE *************************************************//
 
-var BindableVar = function () {
-	this.variable = {};
+var BindableVar = function (value) {
+	this.variable = value;
 	
 	this.setVariable = function(value) {
 		var oldValue = this.variable;
@@ -78,7 +78,7 @@ BindableVar.prototype = new EventDispatcher();
 
 var BaseView = function(domSelector, templateFile, model) {
 	this.isInitialized = false;
-	this.domElement = $(domSelector);
+	this.domElement = $("#" + domSelector);
 	this.model = model;
 	
 	var self = this;
@@ -101,9 +101,10 @@ var BaseView = function(domSelector, templateFile, model) {
 		var parsedHTML = this.template;
 		// get all variables under placeholder
 		this.forEachBindedVariable(function(bindedVariable, variableName) {
-			parsedHTML.replace("{{" + variableName + "}}", bindedVariable.variable);
+			parsedHTML = parsedHTML.replace("{{" + variableName + "}}", bindedVariable.variable);
 		});
 		this.domElement.html(parsedHTML);
+		console.log("Parsed template");
 	};
 	
 	// the only argument of this function is function that will be called for every binded varable with two arguments: variable itself and variable name in model.
@@ -111,9 +112,9 @@ var BaseView = function(domSelector, templateFile, model) {
 		var allBindedVariables = this.template.match(/\{\{[a-zA-Z0-9]*\}\}/g);
 		if(allBindedVariables != null) {
 			for(var i = 0; i < allBindedVariables.length; i++) {
-				var variableName = res[i].substring(2, res[i].length - 2); // remove leading and trailing double curly braces
+				var variableName = allBindedVariables[i].substring(2, allBindedVariables[i].length - 2); // remove leading and trailing double curly braces
 				var modelVariable = model[variableName];
-				if(modelVariable instanceof BindableVariable) {
+				if(modelVariable instanceof BindableVar) {
 					if(actionOnVariable != null) {
 						actionOnVariable(modelVariable, variableName);
 					}
@@ -125,7 +126,7 @@ var BaseView = function(domSelector, templateFile, model) {
 	};
 	
 	this.refreshView = function(event) {
-		this.parseTemplate();
+		self.parseTemplate();
 	};
 	
 };
@@ -144,10 +145,10 @@ BaseModel.prototype = new EventDispatcher();
 var BaseController = function(view, model) {
 	this.view = view;
 	this.model = model;
-
+	
 	this.addEventHandlers = function() {};
 	this.initializeView = function() {};
-
+	
 	this.initialize = function() {
 		if (this.view.isInitialized) {
 			this.addEventHandlers();

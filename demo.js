@@ -3,11 +3,10 @@
  */
 
 $(document).ready(function() {
-	var View = function(){};
-	View.prototype = new BaseView("#testDiv", "template.tpl");
-	var viewObject = new View();
 	
-	var Model = function(){
+	//************************************ FIRST MVC ********************************************************************//
+	
+	var FirstModel = function(){
 		this.fakeRequest = function(stringToReturn) {
 			var self = this;
 			setTimeout(function () {
@@ -15,13 +14,17 @@ $(document).ready(function() {
 			}, 3000);
 		};
 	};
-	Model.prototype = new BaseModel();
-	var modelObject = new Model();
+	FirstModel.prototype = new BaseModel();
+	var firstModelObject = new FirstModel();
 	
-	var Controller = function(){
+	
+	var FirstView = function(){};
+	FirstView.prototype = new BaseView("firstDiv", "firstTemplate.tpl", firstModelObject);
+	var firstViewObject = new FirstView();
+	
+	var FirstController = function(){
 		this.addEventHandlers = function () {
 			$("#templateButton").click(this.clickOnButton);
-			this.model.addEventListener("responseReceived", this.responseReceived);
 		};
 		
 		this.initializeView = function () {
@@ -36,9 +39,42 @@ $(document).ready(function() {
 			$("#responseTemplate").html(event.message);
 		};
 	};
-	Controller.prototype = new BaseController(viewObject, modelObject);
-	var controllerObject = new Controller();
-	controllerObject.initialize();
+	FirstController.prototype = new BaseController(firstViewObject, firstModelObject);
+	var firstControllerObject = new FirstController();
+	firstControllerObject.initialize();
+	
+	//************************************ SECOND MVC ********************************************************************//
+	
+	var SecondModel = function() {
+		this.incrementingInt = new BindableVar(1);
+		
+		this.increment = function() {
+			this.incrementingInt.setVariable(++this.incrementingInt.variable);
+		};
+	};
+	SecondModel.prototype = new BaseModel();
+	var secondModelObject = new SecondModel();
+	
+	var SecondView = function(){};
+	SecondView.prototype = new BaseView("secondDiv", "secondTemplate.tpl", secondModelObject);
+	var secondViewObject = new SecondView();
+	
+	var SecondController = function() {
+		var self = this;
+		
+		this.addEventHandlers = function () {
+		//	$("#incrementButton").click(this.clickOnIncrementButton);
+			$(document).on('click', "#incrementButton", this.clickOnIncrementButton);
+		};
+		
+		this.clickOnIncrementButton = function() {
+			console.log("calling increment");
+			self.model.increment();
+		};
+	};
+	SecondController.prototype = new BaseController(secondViewObject, secondModelObject);
+	var secondControllerObject = new SecondController();
+	secondControllerObject.initialize();
 	
 });
 
