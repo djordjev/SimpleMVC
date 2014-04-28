@@ -5,6 +5,7 @@
 //********************************************************* CONSTANTS *************************************************//
 
 var VIEW_INITIALIZED = "__view_initialized_";
+var PROPERTY_CHANGED = "__property_changed_";
 
 //********************************************************* EVENT DISPATCHER *************************************************//
 
@@ -97,3 +98,33 @@ var BaseController = function(view, model) {
 	
 };
 BaseController.prototype = new EventDispatcher();
+
+//********************************************************* BINDABLE VARIABLE *************************************************//
+
+var BindableVar = function () {
+	this.variable = {};
+	
+	this.setVariable = function(value) {
+		var oldValue = this.variable;
+		this.variable = value;
+		this.dispatchEvent(PROPERTY_CHANGED, {oldValue: oldValue, newValue: value});
+	};
+	
+	this.getVariable = function() {
+		return this.variable;
+	};
+	
+	this.bind = function(bindableVariable) {
+		var self = this;
+		bindableVariable.addEventListener(PROPERTY_CHANGED, this.changedValue);
+	};
+	
+	this.changedValue = function(event) {
+		this.variable = event.newValue;
+	};
+	
+	this.unbind = function(bindableVariable) {
+		bindableVariable.removeEventListener(PROPERTY_CHANGED, this.changedValue);
+	};
+};
+BindableVar.prototype = new EventDispatcher();
