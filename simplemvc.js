@@ -4,14 +4,19 @@
 
 //********************************************************* CONSTANTS *************************************************//
 
+/** Event dispatched when view initialized (template loaded, parsed and added to dom).*/
 var VIEW_INITIALIZED = "__view_initialized_";
+/** Event dispatched when value of BindableVar is changed. */
 var PROPERTY_CHANGED = "__property_changed_";
 
 //********************************************************* EVENT DISPATCHER *************************************************//
 
+/** EventDispatcher object. This is base object for all parts of MVC. Implementation of observer pattern. */
 var EventDispatcher = function() {
+	/** Dictionary mapping event string to array of callback functions that will be called when event is dispatched. */
 	this.listenersMap = new Object();
 
+	/** Function for adding event listener. First argument is event string and second is callback function that will be called when event is dispatched. */
 	this.addEventListener = function(eventString, listenerFunction) {
 		if (this.listenersMap[eventString] == null) {
 			this.listenersMap[eventString] = new Array();
@@ -19,6 +24,7 @@ var EventDispatcher = function() {
 		this.listenersMap[eventString].push(listenerFunction);
 	};
 
+	/** Function for removing event listener. Removes callback function for given event string. */
 	this.removeEventListener = function(eventString, listenerFunction) {
 		var arrayOfListenerFunctions = this.listenersMap[eventString];
 		if (arrayOfListenerFunctions != null) {
@@ -30,10 +36,13 @@ var EventDispatcher = function() {
 		}
 	};
 
+	/** Removes all listeners from this event lispatcher. */
 	this.removeAllListeners = function() {
 		this.listenersMap = new Object();
 	};
 
+	/** Dispatch event. First argument is event string. Second argument is event object (
+	 * 	every function previously added with addEventListener function for this event string will be called with this event) */
 	this.dispatchEvent = function(eventString, event) {
 		var arrayOfListenerFunction = this.listenersMap[eventString];
 		if (arrayOfListenerFunction != null && arrayOfListenerFunction.length > 0) {
@@ -46,28 +55,35 @@ var EventDispatcher = function() {
 
 //********************************************************* BINDABLE VARIABLE *************************************************//
 
+/** Bindable variable. This object dispatches PROPERTY_CHANGED when change it's variable. */
 var BindableVar = function (value) {
+	/** Variable that is wrapped with this object. */
 	this.variable = value;
 	
+	/** Setter for variable. Set new value for variable and dispatch event.*/
 	this.setVariable = function(value) {
 		var oldValue = this.variable;
 		this.variable = value;
 		this.dispatchEvent(PROPERTY_CHANGED, {oldValue: oldValue, newValue: value});
 	};
 	
+	/** Returns value of variable */
 	this.getVariable = function() {
 		return this.variable;
 	};
 	
+	/** Bind one variable to other variable. When variable is binded to other variable, changing value of that other variable will change this variables value. */
 	this.bind = function(bindableVariable) {
 		var self = this;
 		bindableVariable.addEventListener(PROPERTY_CHANGED, this.changedValue);
 	};
 	
+	/** Handler for changed value of binded variable. */
 	this.changedValue = function(event) {
 		this.variable = event.newValue;
 	};
 	
+	/** Stops listening for changes of other variable*/
 	this.unbind = function(bindableVariable) {
 		bindableVariable.removeEventListener(PROPERTY_CHANGED, this.changedValue);
 	};
@@ -76,6 +92,12 @@ BindableVar.prototype = new EventDispatcher();
 
 //********************************************************* BASE VIEW *************************************************//
 
+/** This object should be base object for all views. 
+ * @param domSelector - id of html element in which this view will be added.
+ * @param templateFile - location to template file. Template file is HTML file with placeholders for binding variables. Since view has reference
+ * 						to model, it's possible to bind it to some variable in model. That is achived by adding placeholder {{name}} in template file,
+ * 						on place where that variable should be inserted. name is name of BindableVar in model.
+ * @param model - reference to model. */
 var BaseView = function(domSelector, templateFile, model) {
 	this.isInitialized = false;
 	this.domElement = $("#" + domSelector);
@@ -90,6 +112,7 @@ var BaseView = function(domSelector, templateFile, model) {
 		self.dispatchEvent(VIEW_INITIALIZED, {});
 	});
 	
+	/** For every variable that is binded in template file add event listener for PROPERTY_CHANGED event.*/
 	this.bindVariables = function () {
 		var self = this;
 		this.forEachBindedVariable(function(bindedVariable, varibleName) {
@@ -97,6 +120,7 @@ var BaseView = function(domSelector, templateFile, model) {
 		});
 	};
 	
+	/** Change all placeholders from template file with current value of their binded variables. */
 	this.parseTemplate = function() {
 		var parsedHTML = this.template;
 		// get all variables under placeholder
@@ -106,7 +130,7 @@ var BaseView = function(domSelector, templateFile, model) {
 		this.domElement.html(parsedHTML);
 	};
 	
-	// the only argument of this function is function that will be called for every binded varable with two arguments: variable itself and variable name in model.
+	/** Iterate througn all placeholders in template file and call function from argument (actionOnVariable) for every occurence of placeholder. */
 	this.forEachBindedVariable = function(actionOnVariable) {
 		var allBindedVariables = this.template.match(/\{\{[a-zA-Z0-9]*\}\}/g);
 		if(allBindedVariables != null) {
@@ -124,6 +148,7 @@ var BaseView = function(domSelector, templateFile, model) {
 		}
 	};
 	
+	/** Handler for PROPERTY_CHANGED event. Parse template and add it to DOM. */
 	this.refreshView = function(event) {
 		self.parseTemplate();
 	};
@@ -134,18 +159,20 @@ BaseView.prototype = new EventDispatcher();
 
 //********************************************************* BASE MODEL *************************************************//
 
-
+/** Base object for all models. */
 var BaseModel = function (){};
 BaseModel.prototype = new EventDispatcher();
 
 //********************************************************* BASE CONTROLLER *************************************************//
 
-
+/** Base object for all controllers.It has references to both model and controller.*/
 var BaseController = function(view, model) {
 	this.view = view;
 	this.model = model;
 	
+	/** Function will be called when view is initialized. Use this function to add event listeners on view. This function will be called only once.*/
 	this.addEventHandlers = function() {};
+	/** Function will be called when view is initailized. Use this function to add inital values to view or to initialize model. This function will be called only once. */
 	this.initializeView = function() {};
 	
 	this.initialize = function() {
@@ -162,6 +189,5 @@ var BaseController = function(view, model) {
 	};
 
 }; 
-
 BaseController.prototype = new EventDispatcher();
 
